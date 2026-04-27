@@ -1,3 +1,84 @@
+# 26.04
+**Features:**
+
+* **Installer:**
+  * Shelly is now the default used GUI Package Manager instead of Octopi
+  * Creates now a clean snapshot directly after the installation, which can be used as restore. This snapshot stays permamently.
+  * GRUB OS_PROPER is now default enabled
+  * UKUI Desktop has been dropped
+  * AMD GPUs use now a different plymouth theme, since the amdgpu driver on laptop and a second monitor is not capable to present more then 69 picture  * Cleanup and modernise Gnome package selection
+  * **CachyOS-Welcome:**
+  * Added support for DNS over HTTPs via blocky
+  * DNS Page now allows to latency test specific dns servers and added support for custom servers
+  * Toggle added to enable better VRAM Management on AMD and Intel dGPUs. This can be only used with gamescope or KDE.
+  * Keyboard Navigation
+* **chwd:**
+  * Added support to enable fingerprint sudo for supported devices
+  * Added support for intel-lpmd for supported device and created an own fork for better configs
+  * Chassis Type Detection in profiles
+  * Added Xbox Rog Ally pattern to chwd profile
+* **cachyos-settings:** Switched to NVMe Scheduler from none to kyber 
+
+**Fixes:**
+
+* **Installer:**
+  * Print partition method into debug log
+  * Remove old microcode if reusing boot partition
+* **CachyOS-Welcome:**
+  * 
+
+* **chwd:**
+  * Kernel search is now more accurate in nvidia profiles
+  * Remove forcing Xorg session in 470xx profiles
+  * Match handheld product names now better
+* **cachyos-settings:**
+  * Dropped S01x power management due issues with 595 nvidia driver
+  * Disabled AggresiveVblank due VR issues with the NVIDIA Driver
+# 26.03
+
+**Features:**
+
+* **Installer:**
+  * Added support to show GIF/WebP videos in the Desktop Selection to showcase the desktops. This is enabled for Plasma, GNOME, Niri and COSMIC
+  * Added support for JPEG XL in the Desktop Selection to reduce image sizes
+  * Cachy-Update is now enabled by default for the GNOME and KDE installations
+  * Improved microcode installation logic — it will now detect the hardware and install the proper microcode instead of installing both and then removing the unneeded one
+  * Improved error message when the EFI partition is too small
+  * Sorted the Desktop Environment list from easy and accessible setups to more advanced ones like WMs
+* **CachyOS-Welcome:**
+  * Added a button to easily install and enable "Winboat" for an easy Windows Docker VM
+  * Added support for FFMUC DNS server in DNS selection
+  * Added Ukrainian translation
+* **chwd:** Decreased the initramfs size massively for NVIDIA dGPU configurations
+* **linux-cachyos:** Instead of generating a `0001-cachyos-base-all.patch`, a release is now generated in a Linux repository for each release of our patched kernel
+* **cachyos-rate-mirrors:** Improved the experience for users in China&Russia massively with a proper check before rating the mirrors
+* **cachyos-settings:** Added support to automatically set the wireless regulatory domain based on timezone
+* **website:** The website design has been reworked and improved to follow more modern standards
+* **GitHub:** Added issue templates to important GitHub repos to improve the quality of bug reports and provide guidance for the user
+* **Mirrors:** New mirrors in Russia (jura12, cachy-arch.ru), Sweden (Zyner), and Canada (All Things Linux)
+
+**Fixes:**
+
+* **Installer:**
+  * Removed support for bcachefs in the filesystem selection due to the requirement of bcachefs-dkms
+  * Fixed encryption when LUKS2 is used for specific devices
+  * Fixed enabling the "ly" display manager
+* **cachyos-settings:** `cachyos-bugreport.sh` now redacts IP, username, hostname, and MAC address
+* **chwd:**
+  * Generic handheld profiles and improved support for handheld GPUs
+  * fwupd is now enabled for Lenovo handhelds
+
+
+**Changelog for Handheld Edition:**
+
+* **gamescope-session:** Replaced gamescope-session-plus with gamescope-session-cachyos, which is forked from Valve's gamescope-session
+  * Enables firmware updates for Steam Deck and Lenovo Legion Go devices
+* **plasma-login-manager:** Replaced SDDM with plasma-login-manager for the login manager
+* **bootloaders:** Limine is now selected as default with automatic snapshots. systemd-boot will still be selectable
+* **Installer:** Merged Handheld Calamares with desktop edition calamares together
+* **ISO:** ISO now uses Wayland instead of X11
+
+
 # 26.01
 
 **Features:**
@@ -8,7 +89,7 @@
   * GRUB now uses LUKS2 for encryption.
   * Pass --needed to pacman to avoid installing packages twice.
   * Use single-level compression on NVMe for Btrfs
-  * Removed xorg dependecies on Wayland desktops environments 
+  * Removed xorg dependecies on Wayland desktops environments
 * **ISO:**
   * Switched to `plasma-login-manager` for the ISO environment.
   * The ISO now contains both Stable and LTS kernels. The Stable kernel is selected by default.
@@ -39,7 +120,7 @@
 **Fixes:**
 
 * **Limine:** Increased boot partition size to 4192MB to accommodate high requirements from `limine-snapper-sync`.
-* **Installer:** 
+* **Installer:**
   * The installer now blocks/prevents proceeding if the EFI partition is too small when using "alongside" or "replace partition" options.
   * Fixed an issue, when selected a desktop and go a step further, then going back again and selecting a different desktop it would result that both are selected.
 * **chwd:** Removed the environment variable forcing `libva-nvidia-driver`, as it caused issues on dual-GPU systems.
@@ -106,7 +187,7 @@
 
 **Fixes:**
 
-* **Limine:** 
+* **Limine:**
     - Fixed `limine bios-install /dev/sdaX` error when selecting the **/boot** mount point as the boot location on MBR systems.
     - Fixed uninitialized value of the `bootLoader` path, which caused installation failures on MBR systems when the bootloader location wasn’t explicitly selected.
     - Added a warning about using the **bios-grub** flag on the boot partition, which can cause a “Stage 3 file not found” error.
@@ -117,7 +198,7 @@
  25.07
 
 **Features:**
--   **Shell**: The user shell can be now choosen at installation time between fish, zsh and bash. Fish still stays to be default enabled. 
+-   **Shell**: The user shell can be now choosen at installation time between fish, zsh and bash. Fish still stays to be default enabled.
 -   **chwd**: Install plasma-x11 for legacy NVIDIA Drivers
 -   **Netinstall**: Added fwupd to KDE Plasma and Gnome
 -   **mesa-git**: Added support for AMD Anti Lag
