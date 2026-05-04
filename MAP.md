@@ -45,7 +45,7 @@ testcases/* + machines/*
 | Installer launch | [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh), [`archiso/airootfs/usr/local/bin/pkexec-wrapper`](archiso/airootfs/usr/local/bin/pkexec-wrapper), [`archiso/airootfs/usr/local/bin/prepare-live-desktop.sh`](archiso/airootfs/usr/local/bin/prepare-live-desktop.sh) | Keyring refresh, Calamares launch, desktop preparation, and live environment workarounds. |
 | Inherited cleanup helpers | [`archiso/airootfs/usr/local/bin/remove-nvidia`](archiso/airootfs/usr/local/bin/remove-nvidia), [`removeun`](archiso/airootfs/usr/local/bin/removeun), [`removeun-online`](archiso/airootfs/usr/local/bin/removeun-online), [`nvidia-module-loader`](archiso/airootfs/usr/local/bin/nvidia-module-loader) | Generic CachyOS/NVIDIA/VM cleanup behavior that may or may not still belong in a Mac Pro-only ISO. |
 | Build wrapper | [`buildiso.sh`](buildiso.sh), [`util-iso.sh`](util-iso.sh), [`util.sh`](util.sh), [`util-iso-mount.sh`](util-iso-mount.sh), [`util-msg.sh`](util-msg.sh) | Prepares the archiso profile, mutates generated files, calls `mkarchiso`, then signs/checksums outputs. |
-| CI/test flow | [`.github/workflows/build.yml`](.github/workflows/build.yml), [`ci.build.sh`](ci.build.sh), [`testiso.sh`](testiso.sh), [`testcases/`](testcases), [`machines/`](machines) | GitHub Actions and local/quicktest test paths inherited from CachyOS. They need revalidation with the custom Mac Pro package repo. |
+| CI/test flow | [`.github/workflows/build.yml`](.github/workflows/build.yml), [`ci.build.sh`](ci.build.sh), [`testiso.sh`](testiso.sh), [`testcases/`](testcases), [`machines/`](machines) | GitHub Actions now checks out the sibling kernel repo and builds `linux-macpro61` packages before the ISO step. The quicktest/local paths remain inherited from CachyOS and still need revalidation for Mac Pro-specific behavior. |
 
 ## File Map
 
@@ -60,7 +60,7 @@ testcases/* + machines/*
 | [`CHANGELOG.md`](CHANGELOG.md) | Upstream CachyOS changelog snapshot. | Not a maintained Mac Pro-specific changelog. |
 | [`LICENSE`](LICENSE) | GPL license text. | Inherited from the CachyOS live ISO profile. |
 | [`.gitignore`](.gitignore) | Build artifact ignore rules. | Includes duplicated build/out/ISO patterns and local repo package outputs. |
-| [`.github/workflows/build.yml`](.github/workflows/build.yml) | GitHub Actions build + quicktest workflow. | Needs a reliable Mac Pro package source to build this fork reproducibly. |
+| [`.github/workflows/build.yml`](.github/workflows/build.yml) | GitHub Actions build + quicktest workflow. | Checks out `ishad0w/linux-trash-can`, builds `packaging/arch`, stages packages into `local-repo/`, then runs `buildiso.sh`. Still needs a successful CI run before it is a proven release path. |
 
 ### Build Scripts
 

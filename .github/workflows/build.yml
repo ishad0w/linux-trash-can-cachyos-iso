@@ -30,6 +30,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Clone linux-trash-can kernel repo
+        id: clone-kernel
+        uses: actions/checkout@v4
+        with:
+          repository: ishad0w/linux-trash-can
+          path: linux-trash-can
+          ref: main
+
       - name: Add CachyOS keyring
         id: keyring
         run: |
@@ -42,14 +50,47 @@ jobs:
       - name: Install dependencies
         id: dependencies
         run: |
-          sudo pacman -Syu --noconfirm archiso cachyos-keyring mkinitcpio-archiso squashfs-tools grub
+          sudo pacman -Syu --noconfirm --needed \
+            archiso \
+            bc \
+            cachyos-keyring \
+            clang \
+            cpio \
+            gettext \
+            git \
+            grub \
+            libelf \
+            linux-firmware \
+            lld \
+            llvm \
+            mkinitcpio-archiso \
+            pahole \
+            perl \
+            python \
+            squashfs-tools \
+            tar \
+            xz \
+            zstd
 
       - name: Create build user
         id: user-archiso
         run: |
           useradd builder -m
           echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          chmod -R a+rw .
+          chown -R builder:builder .
+
+      - name: Build linux-macpro61 packages
+        id: kernel-packages
+        run: |
+          sudo -H -E -u builder bash -lc '
+            cd linux-trash-can/packaging/arch
+            makepkg -s --noconfirm --needed
+          '
+          mkdir -p local-repo
+          cp linux-trash-can/packaging/arch/linux-macpro61-[0-9]*.pkg.tar.zst local-repo/
+          cp linux-trash-can/packaging/arch/linux-macpro61-headers-*.pkg.tar.zst local-repo/
+          chown -R builder:builder local-repo
+          ls -lh local-repo
 
       - name: Build ISO (${{ steps.date.outputs.builddate }})
         id: build

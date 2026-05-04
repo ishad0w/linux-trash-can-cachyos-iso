@@ -28,7 +28,7 @@ Use this file as the operating guide. Use [`MAP.md`](MAP.md) as the file-by-file
 | systemd-boot entries | [`archiso/efiboot/loader/entries/`](archiso/efiboot/loader/entries) | Currently inherited/generic and not aligned with the Mac Pro GRUB path. |
 | Live root overlay | [`archiso/airootfs/`](archiso/airootfs) | Reboot protection, modprobe defaults, installer launchers, services, and cleanup scripts. |
 | Build orchestration | [`buildiso.sh`](buildiso.sh), [`util-iso.sh`](util-iso.sh), [`util.sh`](util.sh), [`util-msg.sh`](util-msg.sh), [`util-iso-mount.sh`](util-iso-mount.sh) | CachyOS archiso build wrapper. |
-| CI and tests | [`.github/workflows/build.yml`](.github/workflows/build.yml), [`testcases/`](testcases), [`machines/`](machines), [`testiso.sh`](testiso.sh) | Needs revalidation for this fork and Mac Pro package inputs. |
+| CI and tests | [`.github/workflows/build.yml`](.github/workflows/build.yml), [`testcases/`](testcases), [`machines/`](machines), [`testiso.sh`](testiso.sh) | The build job now creates Mac Pro package inputs from the sibling kernel repo. The test paths still need revalidation for this fork and Mac Pro behavior. |
 
 ## Hard Rules
 
@@ -57,7 +57,7 @@ Use this file as the operating guide. Use [`MAP.md`](MAP.md) as the file-by-file
 - Run `bash -n` on every changed shell script.
 - For docs-only changes, verify relative links from the edited files.
 - On an Arch/CachyOS build host, run `sudo ./buildiso.sh -p desktop -v -w` after build-script or profile changes.
-- If CI changes are touched, validate that the workflow can provide the `linux-macpro61` and headers packages before expecting ISO builds to pass.
+- If CI changes are touched, validate that the workflow still builds or otherwise provides the `linux-macpro61` and headers packages before expecting ISO builds to pass.
 - Heavy ISO builds, live USB boot tests, and Mac Pro hardware tests are expensive. If they were not run, say so explicitly.
 
 ## Watchpoints

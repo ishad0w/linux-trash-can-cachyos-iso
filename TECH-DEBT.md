@@ -27,17 +27,19 @@ Evidence:
 
 - [`archiso/pacman.conf`](archiso/pacman.conf) now carries a placeholder `[macpro]` `file://` URL instead of a developer-local path
 - [`util-iso.sh`](util-iso.sh) validates `MACPRO_LOCAL_REPO` or `./local-repo`, refreshes `macpro.db`, and rewrites the copied `build/archiso/pacman.conf` before `mkarchiso`
-- CI and local builds still cannot succeed unless `linux-macpro61` and `linux-macpro61-headers` packages are present in the local repo
+- [`.github/workflows/build.yml`](.github/workflows/build.yml) now checks out `ishad0w/linux-trash-can`, builds `packaging/arch`, and stages `linux-macpro61` plus headers packages into `local-repo/` before the ISO step
+- Local builds still cannot succeed unless `linux-macpro61` and `linux-macpro61-headers` packages are present in the local repo
 
 Why this matters:
 
 - A fresh clone cannot build the ISO without the sibling kernel packages
-- CI cannot prove the profile is buildable with the intended custom kernel
+- CI must now prove that building the sibling kernel package inside the ISO workflow is reliable enough for the release path
 
 Exit criteria:
 
-- Update CI to create, download, or otherwise provide the `linux-macpro61` package repo before `buildiso.sh`
-- Document the chosen CI package source in README and release docs
+- Complete a successful GitHub Actions run that builds the kernel packages and ISO in the same workflow
+- Decide whether CI should keep building the kernel from source or switch to signed release/package artifacts
+- Document the chosen CI package source in release docs
 - Keep direct `mkarchiso` usage documented as requiring a real `[macpro]` `file://` path
 
 ### ISO-TD-002 - Bootloader paths disagree on the default kernel
@@ -87,26 +89,27 @@ Exit criteria:
 - Change boot entries to the intended no-initramfs contract if supported by archiso, and
 - Document the chosen contract in README and MAP
 
-### ISO-TD-004 - CI is not proven to build this fork's real custom-kernel ISO
+### ISO-TD-004 - CI custom-kernel ISO path is wired but not proven
 
-**State:** open
+**State:** partially mitigated
 **Area:** CI / release
 
 Evidence:
 
-- [`.github/workflows/build.yml`](.github/workflows/build.yml) runs `./buildiso.sh` but does not build or fetch `linux-macpro61` packages into `local-repo/`
+- [`.github/workflows/build.yml`](.github/workflows/build.yml) now checks out `ishad0w/linux-trash-can`, installs kernel build dependencies, runs `makepkg` in `packaging/arch`, and copies the resulting packages into `local-repo/`
 - [`ci.build.sh`](ci.build.sh) references `fix_permissions.sh` and `mkarchiso`, neither of which exists in this tree
-- [`buildiso.sh`](buildiso.sh) now fails early if the Mac Pro packages are missing, but the workflow still does not provide them
+- This path still needs a successful CI run before it can be treated as a proven release build
 
 Why this matters:
 
-- CI can fail before testing the ISO profile, or pass only after hidden external state is supplied
+- CI can still fail on kernel build time, missing build dependencies, or GitHub runner resource limits before testing the ISO profile
 - The release path is not self-documenting
 
 Exit criteria:
 
 - Remove or repair [`ci.build.sh`](ci.build.sh)
-- Teach GitHub Actions to build/fetch `linux-macpro61` packages and create `local-repo`
+- Complete at least one successful workflow run that builds kernel packages, creates `local-repo`, builds the ISO, and uploads artifacts
+- Record kernel package provenance in release output or release notes
 - Upload ISO artifacts only after the Mac Pro boot artifacts are present and verified
 
 ## P2

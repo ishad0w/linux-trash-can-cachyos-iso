@@ -124,7 +124,7 @@ Always power off instead of warm rebooting when switching kernels. Apple EFI oft
 - `local-repo/` must still be populated before the ISO can build; `buildiso.sh` only validates it, refreshes `macpro.db`, and rewrites the build-time pacman path.
 - UEFI systemd-boot, loopback, and PXE paths still look more generic than the GRUB/syslinux Mac Pro paths.
 - `ci.build.sh` is stale and references scripts that are not in this repository.
-- The GitHub workflow may not be enough for real releases unless the Mac Pro package repo is provided in CI.
+- The GitHub workflow now checks out `ishad0w/linux-trash-can` and builds `linux-macpro61` packages before the ISO step; this still needs a successful CI run before treating it as a proven release path.
 - This repo carries inherited CachyOS live ISO helpers, NVIDIA cleanup code, VM guest services, and generic test flows that have not all been re-audited for the Mac Pro-only target.
 
 Use [`MAP.md`](MAP.md) to find the right file before changing a boot path or package list. Use [`TECH-DEBT.md`](TECH-DEBT.md) before deleting inherited CachyOS pieces.
