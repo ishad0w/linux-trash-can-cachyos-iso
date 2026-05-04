@@ -1,68 +1,64 @@
-# CachyOS Mac Pro 6,1 Edition
+# CachyOS Mac Pro 6,1 ISO Profile
 
-A custom [CachyOS](https://cachyos.org) ISO for the **Mac Pro 6,1 (Late 2013)** with hardware support baked in.
+Custom CachyOS live ISO profile for the Mac Pro 6,1 (Late 2013). It is the CachyOS/Arch live-media side of the workspace: it expects `linux-macpro61` packages from the sibling kernel project and layers Mac Pro 6,1 boot defaults, amdgpu Southern Islands parameters, reboot protection, and installer conveniences on top of a CachyOS desktop ISO.
 
-## What You Get
+> Historical upstream note: the original `wolffcatskyy/cachyos-macpro-iso` and `wolffcatskyy/linux-mac` projects were archived on March 10, 2026. Treat this repository (`ishad0w/linux-trash-can-cachyos-iso`), the sibling [`linux-trash-can`](https://github.com/ishad0w/linux-trash-can), and the docs in this tree as the maintained source of truth.
 
-- Full CachyOS desktop (KDE Plasma, 17+ DE options via installer)
-- Custom **linux-macpro61** kernel with:
-  - AMD D300/D500/D700 GPU firmware embedded (amdgpu driver)
-  - Cold-boot protection (Apple EFI needs poweroff, not reboot, for GPU init)
-  - Broadcom ethernet ready
-  - BORE CPU scheduler
-  - BBR3 congestion control
-- CachyOS performance optimizations (ananicy-cpp, optimized packages)
-- Calamares graphical installer — point and click to install
+## What This Is
 
-## Pre-built ISO (Recommended)
+This repository is an `archiso` profile plus build/test helpers. It does not build the kernel itself. The expected input is a local pacman repository containing:
 
-Download the latest pre-built ISO from [Releases](https://github.com/wolffcatskyy/cachyos-macpro-iso/releases). The ISO is split into two parts due to GitHub's 2GB file size limit.
+- `linux-macpro61-*.pkg.tar.zst`
+- `linux-macpro61-headers-*.pkg.tar.zst`
 
-1. Download both `.part_aa` and `.part_ab` files from the latest release
-2. Reassemble the ISO:
-   - **Linux/macOS:** `cat cachyos-macpro-*.iso.part_* > cachyos-macpro.iso`
-   - **Windows (PowerShell):** `cmd /c copy /b cachyos-macpro-*.iso.part_aa+cachyos-macpro-*.iso.part_ab cachyos-macpro.iso`
-3. Verify the checksum (listed in the release notes): `sha256sum cachyos-macpro.iso`
-4. Flash to USB:
-   - **Windows:** Use [Rufus](https://rufus.ie) or [balenaEtcher](https://etcher.balena.io)
-   - **Linux/macOS:** `sudo dd if=cachyos-macpro.iso of=/dev/sdX bs=4M status=progress`
-5. Boot your Mac Pro:
-   - Plug in the USB drive
-   - **Power off** the Mac Pro (never reboot — GPU firmware only initializes on cold boot)
-   - Press the power button and **immediately hold the Option key**
-   - Select the USB drive from the boot menu
-   - Choose **"CachyOS (Mac Pro 6,1)"** from the GRUB menu
-   - The desktop will load — double-click the installer icon
+Those packages come from the sibling kernel repository's [`packaging/arch`](../linux-trash-can/packaging/arch) path. The ISO then boots with `linux-macpro61` where the active boot loader path uses the Mac Pro entry.
 
-## Build the ISO Yourself
+## Hardware Target
 
-You need a working Arch Linux or CachyOS installation to build. If your Mac Pro already runs Arch/CachyOS, you can build directly on it.
+| Area | Current profile behavior |
+|------|------|
+| CPU | Ivy Bridge-EP Xeon family used by Mac Pro 6,1 |
+| GPU | AMD FirePro D300/D500/D700 via `amdgpu` with `amdgpu.si_support=1` and `amdgpu.dc=0` |
+| Storage | Apple AHCI SSD plus common aftermarket NVMe upgrades |
+| Networking | Broadcom ethernet, NetworkManager, installer networking |
+| Desktop | CachyOS Plasma live desktop with Calamares |
+| Cold boot | `reboot` alias points to `poweroff`; `reboot.target` is masked in the live root |
 
-### Step 1: Install build tools
+## Current Boot Story
 
-```bash
-sudo pacman -S archiso mkinitcpio-archiso squashfs-tools grub git --needed
+The intended live-boot path is:
+
+```text
+local-repo/linux-macpro61*.pkg.tar.zst
+    -> archiso/pacman.conf [macpro]
+    -> archiso/packages_desktop.x86_64
+    -> archiso/grub/grub.cfg or archiso/syslinux/archiso_sys-linux.cfg
+    -> live ISO boots vmlinuz-linux-macpro61
 ```
 
-### Step 2: Clone this repo
+GRUB and BIOS syslinux have explicit Mac Pro 6,1 entries. Several inherited paths still boot generic CachyOS LTS or refer to `linux-cachyos`; those are documented as technical debt in [`TECH-DEBT.md`](TECH-DEBT.md).
+
+## Build
+
+### 1. Build or obtain the kernel packages
+
+From the sibling kernel repository:
 
 ```bash
-git clone https://github.com/wolffcatskyy/cachyos-macpro-iso.git
-cd cachyos-macpro-iso
+cd ../linux-trash-can/packaging/arch
+makepkg -s
 ```
 
-### Step 3: Get the kernel packages
-
-Download the latest `linux-macpro61` packages from [linux-mac releases](https://github.com/wolffcatskyy/linux-mac/releases) and place them in `local-repo/`:
+Copy the generated kernel and headers packages into this repository:
 
 ```bash
+cd ../../../linux-trash-can-cachyos-iso
 mkdir -p local-repo
-# Download both packages into local-repo/
-# linux-macpro61-*.pkg.tar.zst
-# linux-macpro61-headers-*.pkg.tar.zst
+cp ../linux-trash-can/packaging/arch/linux-macpro61-*.pkg.tar.zst local-repo/
+cp ../linux-trash-can/packaging/arch/linux-macpro61-headers-*.pkg.tar.zst local-repo/
 ```
 
-Then create the local package database:
+Create the local package database:
 
 ```bash
 cd local-repo
@@ -70,85 +66,64 @@ repo-add macpro.db.tar.gz *.pkg.tar.zst
 cd ..
 ```
 
-### Step 4: Update the repo path
+### 2. Point pacman at the local repo
 
-Edit `archiso/pacman.conf` and change the `[macpro]` section at the bottom to point to your `local-repo` directory:
+Edit the `[macpro]` section in [`archiso/pacman.conf`](archiso/pacman.conf):
 
 ```ini
 [macpro]
 SigLevel = Never
-Server = file:///full/path/to/cachyos-macpro-iso/local-repo
+Server = file:///absolute/path/to/linux-trash-can-cachyos-iso/local-repo
 ```
 
-### Step 5: Trust the CachyOS signing key
+The committed file currently contains a developer-local path. That is intentional evidence of current debt, not a portable default.
+
+### 3. Prepare CachyOS trust on plain Arch
+
+On a CachyOS build host this is normally already handled. On a plain Arch host, seed the CachyOS signing key the same way the workflow does:
 
 ```bash
-sudo pacman-key --recv-keys 882DCFE48E2051D48E2562ABF3B607488DB35A47
-sudo pacman-key --lsign-key 882DCFE48E2051D48E2562ABF3B607488DB35A47
+sudo pacman-key --init
+sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
+sudo pacman-key --lsign-key F3B607488DB35A47
 ```
 
-### Step 6: Build
+### 4. Build the ISO
+
+On an Arch Linux or CachyOS build host:
 
 ```bash
+sudo pacman -S --needed archiso mkinitcpio-archiso squashfs-tools grub git
 sudo ./buildiso.sh -p desktop -v -w
 ```
 
-The ISO will appear in `out/desktop/`. It will be around 2.5-3 GB.
+Artifacts are written under `out/desktop/`.
 
-### Step 7: Write to USB
+## Boot
 
-```bash
-sudo dd if=out/desktop/cachyos-macpro-*.iso of=/dev/sdX bs=4M status=progress
-sync
-```
+1. Write the ISO to USB.
+2. Fully power off the Mac Pro 6,1.
+3. Press the power button and immediately hold Option.
+4. Select the USB drive.
+5. In GRUB, choose `CachyOS (Mac Pro 6,1)`.
 
-Replace `/dev/sdX` with your USB drive. **Double-check the device name** — this erases everything on it. Use `lsblk` to identify your USB drive.
+Always power off instead of warm rebooting when switching kernels. Apple EFI often leaves the FirePro GPUs uninitialized after warm reboot, which can produce a black screen.
 
-### Step 8: Boot your Mac Pro
+## Documentation
 
-1. Plug the USB into your Mac Pro
-2. Power on (or power off first if already running — **always poweroff, never reboot**)
-3. **Hold the Option key** immediately after pressing the power button
-4. Select the USB drive from the boot menu
-5. Choose **"CachyOS (Mac Pro 6,1)"** from the GRUB menu
-6. The desktop will load — double-click the installer icon
+- [`MAP.md`](MAP.md) - repository map, change surfaces, and file purposes
+- [`AGENTS.md`](AGENTS.md) - working rules for humans and automation
+- [`TECH-DEBT.md`](TECH-DEBT.md) - confirmed stale, partial, or risky areas
+- [`CHANGELOG.md`](CHANGELOG.md) - inherited upstream CachyOS changelog snapshot, not a Mac Pro specific release log
+- [`../linux-trash-can/README.md`](../linux-trash-can/README.md) - sibling kernel project overview
+- [`../linux-trash-can/MAP.md`](../linux-trash-can/MAP.md) - kernel project map
 
-## Important: Never Reboot
+## Current Caveats
 
-The Mac Pro 6,1 has a quirk with Apple EFI: the GPU firmware only initializes on a **cold boot** (power off then power on). A warm reboot leaves the GPU in an uninitialized state — you get a black screen.
+- No portable automatic discovery for `local-repo/` exists yet.
+- UEFI systemd-boot, loopback, and PXE paths still look more generic than the GRUB/syslinux Mac Pro paths.
+- `ci.build.sh` is stale and references scripts that are not in this repository.
+- The GitHub workflow may not be enough for real releases unless the Mac Pro package repo is provided in CI.
+- This repo carries inherited CachyOS live ISO helpers, NVIDIA cleanup code, VM guest services, and generic test flows that have not all been re-audited for the Mac Pro-only target.
 
-This ISO includes protections:
-- `reboot` command is aliased to `poweroff`
-- `reboot.target` is masked in systemd
-- GRUB menu warns about this
-
-**Always use `sudo poweroff` then press the power button.**
-
-## What's Changed from Stock CachyOS ISO
-
-| File | Change |
-|------|--------|
-| `archiso/packages_desktop.x86_64` | `linux-cachyos` replaced with `linux-macpro61`, nvidia packages removed |
-| `archiso/pacman.conf` | Local repo added for custom kernel |
-| `archiso/grub/grub.cfg` | Mac Pro kernel + amdgpu boot params as default |
-| `archiso/syslinux/archiso_sys-linux.cfg` | Same for BIOS boot |
-| `archiso/profiledef.sh` | ISO name/label updated |
-| `archiso/airootfs/etc/modprobe.d/macpro-gpu.conf` | amdgpu SI support, radeon blacklisted |
-| `archiso/airootfs/etc/profile.d/no-reboot.sh` | Reboot alias protection |
-| `archiso/airootfs/etc/systemd/system/reboot.target` | Masked (symlink to /dev/null) |
-| `archiso/airootfs/etc/pacman.d/hooks/99-esp-kernel-sync.hook` | Auto-sync kernel to ESP on update |
-
-## Reporting Issues
-
-Found a bug or need help? [Open an issue](https://github.com/wolffcatskyy/cachyos-macpro-iso/issues).
-
-If you can test the ISO on your Mac Pro 6,1, we'd love to hear your results — especially:
-- Which GPU model (D300, D500, or D700)?
-- Did the installer work?
-- Did the system boot after install?
-- Any hardware that didn't work?
-
-## Credits
-
-- [CachyOS](https://cachyos.org) for the base ISO builder and optimized packages
-- [linux-mac](https://github.com/wolffcatskyy/linux-mac) project for the Mac Pro 6,1 kernel
+Use [`MAP.md`](MAP.md) to find the right file before changing a boot path or package list. Use [`TECH-DEBT.md`](TECH-DEBT.md) before deleting inherited CachyOS pieces.
