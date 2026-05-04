@@ -19,7 +19,8 @@ This file is the navigation index for `linux-trash-can-cachyos-iso`: what each a
 ```text
 ../linux-trash-can/packaging/arch/*.pkg.tar.zst
     -> local-repo/
-    -> archiso/pacman.conf [macpro]
+    -> buildiso.sh refreshes macpro.db
+    -> build/archiso/pacman.conf [macpro]
     -> archiso/packages_desktop.x86_64
     -> buildiso.sh + util-iso.sh
     -> out/desktop/*.iso
@@ -38,7 +39,7 @@ testcases/* + machines/*
 
 | Surface | Main files | What is really changing here |
 |------|------|------|
-| Kernel package source | [`archiso/pacman.conf`](archiso/pacman.conf), [`local-repo/`](local-repo), [`archiso/packages_desktop.x86_64`](archiso/packages_desktop.x86_64) | The ISO consumes prebuilt `linux-macpro61` and headers packages. The committed pacman path is still developer-local and must be replaced per build. |
+| Kernel package source | [`archiso/pacman.conf`](archiso/pacman.conf), [`local-repo/`](local-repo), [`archiso/packages_desktop.x86_64`](archiso/packages_desktop.x86_64), [`util-iso.sh`](util-iso.sh) | The ISO consumes prebuilt `linux-macpro61` and headers packages. `buildiso.sh`/`util-iso.sh` validate the repo, refresh `macpro.db`, and rewrite the copied build profile to the current local repo path. |
 | Live boot entries | [`archiso/grub/grub.cfg`](archiso/grub/grub.cfg), [`archiso/syslinux/archiso_sys-linux.cfg`](archiso/syslinux/archiso_sys-linux.cfg), [`archiso/efiboot/loader/entries/`](archiso/efiboot/loader/entries), [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg), [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) | GRUB and BIOS syslinux have Mac Pro entries. systemd-boot, loopback, and PXE are still mostly generic CachyOS LTS/stable paths. |
 | Live root hardware defaults | [`archiso/airootfs/etc/modprobe.d/macpro-gpu.conf`](archiso/airootfs/etc/modprobe.d/macpro-gpu.conf), [`archiso/airootfs/etc/profile.d/no-reboot.sh`](archiso/airootfs/etc/profile.d/no-reboot.sh), [`archiso/airootfs/etc/systemd/system/reboot.target`](archiso/airootfs/etc/systemd/system/reboot.target) | Forces amdgpu SI support, disables warm reboot behavior, and masks reboot in the live root. |
 | Installer launch | [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh), [`archiso/airootfs/usr/local/bin/pkexec-wrapper`](archiso/airootfs/usr/local/bin/pkexec-wrapper), [`archiso/airootfs/usr/local/bin/prepare-live-desktop.sh`](archiso/airootfs/usr/local/bin/prepare-live-desktop.sh) | Keyring refresh, Calamares launch, desktop preparation, and live environment workarounds. |
@@ -66,7 +67,7 @@ testcases/* + machines/*
 | Path | Purpose | Notes |
 |------|------|------|
 | [`buildiso.sh`](buildiso.sh) | Top-level build wrapper. | Parses `-p`, `-c`, `-r`, `-w`, `-v`; imports helper scripts; calls `run_build`. Root escalation is currently commented out. |
-| [`util-iso.sh`](util-iso.sh) | Main archiso orchestration. | Generates MOTD/version tags, prepares profile, mutates `/usr/bin/mkarchiso`, runs `mkarchiso`, creates checksums, signs ISO outputs. |
+| [`util-iso.sh`](util-iso.sh) | Main archiso orchestration. | Generates MOTD/version tags, prepares profile, validates the Mac Pro package repo, refreshes `macpro.db`, rewrites the copied `[macpro]` pacman path, mutates `/usr/bin/mkarchiso`, runs `mkarchiso`, creates checksums, signs ISO outputs. |
 | [`util.sh`](util.sh) | Generic helpers. | Timers, root escalation, archiso dependency check, checksums, GPG signing. |
 | [`util-iso-mount.sh`](util-iso-mount.sh) | Mount cleanup helpers. | Unmounts active image and filesystem mounts under the work directory. |
 | [`util-msg.sh`](util-msg.sh) | Terminal output helpers. | Colorized `msg`, `info`, `warning`, `error`, and `import`. |
@@ -79,7 +80,7 @@ testcases/* + machines/*
 | Path | Purpose | Notes |
 |------|------|------|
 | [`archiso/profiledef.sh`](archiso/profiledef.sh) | archiso profile metadata. | Sets `iso_name=cachyos-macpro`, GRUB/syslinux boot modes, squashfs options, and file permissions. |
-| [`archiso/pacman.conf`](archiso/pacman.conf) | Build-time pacman config. | Contains CachyOS, Arch, multilib, and `[macpro]` repos; `[macpro]` is currently hardcoded to a developer-local path. |
+| [`archiso/pacman.conf`](archiso/pacman.conf) | Build-time pacman config template. | Contains CachyOS, Arch, multilib, and `[macpro]` repos. The committed `[macpro]` URL is a placeholder; `buildiso.sh` rewrites the copied config in `build/archiso/`. |
 | [`archiso/packages_desktop.x86_64`](archiso/packages_desktop.x86_64) | Desktop live ISO package list. | Includes 194 uncommented packages, including `linux-macpro61`, headers, and `linux-cachyos-lts` fallback. |
 | [`archiso/bootstrap_packages.x86_64`](archiso/bootstrap_packages.x86_64) | Minimal bootstrap package list. | Currently only `arch-install-scripts` and `base`. |
 
@@ -140,7 +141,7 @@ These are mentioned in docs or scripts but should not be committed:
 ## Current Nuances To Remember
 
 - This repo does not build the kernel. It consumes packages from the sibling kernel project.
-- The committed `[macpro]` pacman repo path is not portable.
+- The committed `[macpro]` pacman repo path is a placeholder; direct `mkarchiso` calls still need a real `file://` repo path or should go through `buildiso.sh`.
 - GRUB and BIOS syslinux are the most Mac Pro-specific boot paths today.
 - systemd-boot, loopback GRUB, and PXE are inherited/generic and should not be treated as equivalent to the primary Mac Pro GRUB path.
 - The package list includes `linux-cachyos-lts` as fallback but the `02-archiso-linux-cachyos.conf` entry references `linux-cachyos`, which is not in the package list.

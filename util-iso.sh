@@ -124,6 +124,51 @@ modify_mkarchiso() {
     fi
 }
 
+configure_macpro_repo() {
+    local _repo_dir="${MACPRO_LOCAL_REPO:-${src_dir}/local-repo}"
+    local _pacman_conf="${work_dir}/archiso/pacman.conf"
+    local _server_url
+    local _escaped_server_url
+    local _kernel_pkgs
+    local _header_pkgs
+
+    if [[ ! -d "${_repo_dir}" ]]; then
+        die "Mac Pro package repo does not exist: %s" "${_repo_dir}"
+    fi
+
+    _repo_dir="$(cd "${_repo_dir}" && pwd -P)"
+
+    _kernel_pkgs=$(find "${_repo_dir}" -maxdepth 1 -type f -name 'linux-macpro61-[0-9]*.pkg.tar.zst' -print -quit)
+    _header_pkgs=$(find "${_repo_dir}" -maxdepth 1 -type f -name 'linux-macpro61-headers-*.pkg.tar.zst' -print -quit)
+
+    if [[ -z "${_kernel_pkgs}" ]]; then
+        die "Missing linux-macpro61 package in %s" "${_repo_dir}"
+    fi
+
+    if [[ -z "${_header_pkgs}" ]]; then
+        die "Missing linux-macpro61-headers package in %s" "${_repo_dir}"
+    fi
+
+    if ! command -v repo-add >/dev/null 2>&1; then
+        die "repo-add is required to create macpro.db"
+    fi
+
+    msg2 "Updating Mac Pro package database in ${_repo_dir}"
+    (cd "${_repo_dir}" && repo-add macpro.db.tar.gz ./*.pkg.tar.zst >/dev/null)
+
+    _server_url="file://${_repo_dir}"
+    _escaped_server_url="${_server_url//|/\\|}"
+    _escaped_server_url="${_escaped_server_url//&/\\&}"
+
+    sed -i "/^\[macpro\]$/,/^\[/ s|^Server = file://.*|Server = ${_escaped_server_url}|" "${_pacman_conf}"
+
+    if ! grep -Fqx "Server = ${_server_url}" "${_pacman_conf}"; then
+        die "Failed to configure [macpro] Server in %s" "${_pacman_conf}"
+    fi
+
+    msg2 "Using Mac Pro package repo: ${_server_url}"
+}
+
 prepare_profile(){
     profile=$1
 
@@ -176,6 +221,7 @@ run_build() {
     msg2 "Copying the Archiso folder to build work"
     mkdir -p ${work_dir}
     cp -r archiso ${work_dir}/archiso
+    configure_macpro_repo
 
     msg "Start [Build ISO]"
 

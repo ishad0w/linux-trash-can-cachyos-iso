@@ -30,7 +30,8 @@ The intended live-boot path is:
 
 ```text
 local-repo/linux-macpro61*.pkg.tar.zst
-    -> archiso/pacman.conf [macpro]
+    -> buildiso.sh generates local-repo/macpro.db
+    -> build/archiso/pacman.conf [macpro]
     -> archiso/packages_desktop.x86_64
     -> archiso/grub/grub.cfg or archiso/syslinux/archiso_sys-linux.cfg
     -> live ISO boots vmlinuz-linux-macpro61
@@ -58,7 +59,7 @@ cp ../linux-trash-can/packaging/arch/linux-macpro61-*.pkg.tar.zst local-repo/
 cp ../linux-trash-can/packaging/arch/linux-macpro61-headers-*.pkg.tar.zst local-repo/
 ```
 
-Create the local package database:
+`buildiso.sh` creates or refreshes `local-repo/macpro.db` automatically before `mkarchiso`. To create it manually, run:
 
 ```bash
 cd local-repo
@@ -68,15 +69,15 @@ cd ..
 
 ### 2. Point pacman at the local repo
 
-Edit the `[macpro]` section in [`archiso/pacman.conf`](archiso/pacman.conf):
+By default, [`buildiso.sh`](buildiso.sh) uses `./local-repo` and rewrites the `[macpro]` `Server` line in the copied build profile at `build/archiso/pacman.conf`. The committed [`archiso/pacman.conf`](archiso/pacman.conf) contains a placeholder so direct `mkarchiso` calls do not accidentally depend on a developer-local path.
 
-```ini
-[macpro]
-SigLevel = Never
-Server = file:///absolute/path/to/linux-trash-can-cachyos-iso/local-repo
+To use a different package repository, set `MACPRO_LOCAL_REPO`:
+
+```bash
+MACPRO_LOCAL_REPO=/absolute/path/to/local-repo sudo -E ./buildiso.sh -p desktop -v -w
 ```
 
-The committed file currently contains a developer-local path. That is intentional evidence of current debt, not a portable default.
+The repo must contain both `linux-macpro61` and `linux-macpro61-headers` packages. If either package is missing, the build stops before `mkarchiso` with a focused error.
 
 ### 3. Prepare CachyOS trust on plain Arch
 
@@ -120,7 +121,7 @@ Always power off instead of warm rebooting when switching kernels. Apple EFI oft
 
 ## Current Caveats
 
-- No portable automatic discovery for `local-repo/` exists yet.
+- `local-repo/` must still be populated before the ISO can build; `buildiso.sh` only validates it, refreshes `macpro.db`, and rewrites the build-time pacman path.
 - UEFI systemd-boot, loopback, and PXE paths still look more generic than the GRUB/syslinux Mac Pro paths.
 - `ci.build.sh` is stale and references scripts that are not in this repository.
 - The GitHub workflow may not be enough for real releases unless the Mac Pro package repo is provided in CI.

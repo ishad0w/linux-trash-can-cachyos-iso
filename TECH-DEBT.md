@@ -18,27 +18,27 @@ This is not a full ISO build or Mac Pro hardware validation report. Some items a
 
 ## P1
 
-### ISO-TD-001 - `[macpro]` pacman repo is hardcoded to a developer-local path
+### ISO-TD-001 - `[macpro]` package repo must be provided before local or CI builds
 
-**State:** open
+**State:** partially mitigated
 **Area:** package input / reproducibility
 
 Evidence:
 
-- [`archiso/pacman.conf`](archiso/pacman.conf) points `[macpro]` at `file:///home/michael/linux-mac/cachyos-iso/local-repo`
-- [`README.md`](README.md) requires the builder to manually replace this with an absolute local path
-- CI and local builds cannot be reproducible unless they provide the same path or patch the file first
+- [`archiso/pacman.conf`](archiso/pacman.conf) now carries a placeholder `[macpro]` `file://` URL instead of a developer-local path
+- [`util-iso.sh`](util-iso.sh) validates `MACPRO_LOCAL_REPO` or `./local-repo`, refreshes `macpro.db`, and rewrites the copied `build/archiso/pacman.conf` before `mkarchiso`
+- CI and local builds still cannot succeed unless `linux-macpro61` and `linux-macpro61-headers` packages are present in the local repo
 
 Why this matters:
 
-- A fresh clone cannot build the ISO without hidden local edits
+- A fresh clone cannot build the ISO without the sibling kernel packages
 - CI cannot prove the profile is buildable with the intended custom kernel
 
 Exit criteria:
 
-- Generate the `[macpro]` repo path from `$(pwd)/local-repo`, or
-- Provide an environment variable/build flag for the custom repo path, and
-- Update CI to create/populate that repo before `buildiso.sh`
+- Update CI to create, download, or otherwise provide the `linux-macpro61` package repo before `buildiso.sh`
+- Document the chosen CI package source in README and release docs
+- Keep direct `mkarchiso` usage documented as requiring a real `[macpro]` `file://` path
 
 ### ISO-TD-002 - Bootloader paths disagree on the default kernel
 
@@ -96,7 +96,7 @@ Evidence:
 
 - [`.github/workflows/build.yml`](.github/workflows/build.yml) runs `./buildiso.sh` but does not build or fetch `linux-macpro61` packages into `local-repo/`
 - [`ci.build.sh`](ci.build.sh) references `fix_permissions.sh` and `mkarchiso`, neither of which exists in this tree
-- [`archiso/pacman.conf`](archiso/pacman.conf) still depends on a developer-local `[macpro]` path
+- [`buildiso.sh`](buildiso.sh) now fails early if the Mac Pro packages are missing, but the workflow still does not provide them
 
 Why this matters:
 
@@ -194,6 +194,75 @@ Exit criteria:
 - Add a validation matrix that separates build, VM boot, installer, and real Mac Pro hardware tests
 - Capture hardware test logs for each released ISO
 
+### ISO-TD-011 - Local smoke-test helper hardcodes VirtualBox host state
+
+**State:** open
+**Area:** local testing / host assumptions
+
+Evidence:
+
+- [`testiso.sh`](testiso.sh) hardcodes the VM name `CachyOS`
+- It writes under `~/VirtualBox VMs/CachyOS/`
+- It creates a fixed `10GB` VDI and fixed VM XML with static CPU/RAM/display/network assumptions
+- It reads locale from `/etc/locale.conf` and attaches the first matching ISO found under the requested output folder
+
+Why this matters:
+
+- Running the helper can collide with an existing user VM named `CachyOS`
+- The test is host-specific, not isolated, and not clearly tied to a particular ISO artifact
+- Contributors can mistake this for a supported validation path even though it does not validate Mac Pro hardware
+
+Exit criteria:
+
+- Parameterize VM name, VM directory, disk size, memory, and ISO path
+- Prefer disposable per-run VM names or quicktest/QEMU for automation
+- Document `testiso.sh` as a local convenience helper only, or replace it with the supported test flow
+
+### ISO-TD-012 - Build, test, and installer paths depend on moving external inputs
+
+**State:** open
+**Area:** reproducibility / external dependencies
+
+Evidence:
+
+- [`util-iso.sh`](util-iso.sh) fetches the CachyOS mirrorlist from the `CachyOS-PKGBUILDS` `master` branch during build
+- [`.github/workflows/build.yml`](.github/workflows/build.yml) uses the floating `archlinux:base-devel` container tag and installs latest packages at workflow runtime
+- The quicktest job builds `quickemu` from the AUR at current HEAD
+- [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh) installs `cachyos-calamares-next` at runtime before launching the installer
+
+Why this matters:
+
+- A CI/build/test result can change without any commit in this repository
+- Reproducing an ISO after a package repo or AUR change becomes difficult
+
+Exit criteria:
+
+- Pin container images, AUR inputs, and downloaded helper files to reviewed versions where possible
+- Record package database timestamps or artifact manifests for releases
+- Decide whether runtime installer package refresh is required or should be replaced with packages already present in the ISO
+
+### ISO-TD-013 - Inherited automated boot script execution needs a fork policy
+
+**State:** open
+**Area:** live ISO behavior / inherited archiso hooks
+
+Evidence:
+
+- [`archiso/airootfs/root/.automated_script.sh`](archiso/airootfs/root/.automated_script.sh) reads a `script=` kernel command-line parameter
+- If the value is an HTTP/HTTPS/FTP/TFTP URL, it downloads it to `/tmp/startup_script` and executes it
+- If the value is a local path, it copies and executes that path
+
+Why this matters:
+
+- This can be a useful archiso automation feature, but it is not documented as part of the Mac Pro profile contract
+- Public rescue/live media should make boot-time remote code execution behavior explicit
+
+Exit criteria:
+
+- Decide whether the fork supports `script=` automation
+- If yes, document the feature and its trust boundary
+- If no, remove or disable the hook in the Mac Pro profile
+
 ## P3
 
 ### ISO-TD-009 - `CHANGELOG.md` is an inherited upstream CachyOS changelog
@@ -236,8 +305,8 @@ Exit criteria:
 ## Suggested Order
 
 1. Resolve `ISO-TD-001`, `ISO-TD-002`, and `ISO-TD-003` first. They determine whether the ISO boots the intended kernel reproducibly.
-2. Repair CI and host mutation next: `ISO-TD-004` and `ISO-TD-005`.
-3. Then audit inherited CachyOS/NVIDIA/test paths: `ISO-TD-006` and `ISO-TD-008`.
+2. Repair CI, host mutation, and moving inputs next: `ISO-TD-004`, `ISO-TD-005`, and `ISO-TD-012`.
+3. Then audit inherited CachyOS/NVIDIA/test/automation paths: `ISO-TD-006`, `ISO-TD-008`, `ISO-TD-011`, and `ISO-TD-013`.
 4. Finish with release documentation and cleanup: `ISO-TD-007`, `ISO-TD-009`, and `ISO-TD-010`.
 
 ## Explicitly Not Listed Here
@@ -248,3 +317,4 @@ These are constraints, not debt by themselves:
 - Need for external `linux-macpro61` packages
 - Keeping `linux-cachyos-lts` as an explicit fallback, if documented and bootable
 - Using Calamares and CachyOS desktop packages as the live ISO base
+- Standard Linux/archiso paths under `/etc`, `/usr`, `/boot`, and `/home/liveuser` when they are part of the live profile contract
