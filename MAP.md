@@ -44,7 +44,7 @@ testcases/* + machines/*
 | Live root hardware defaults | [`archiso/airootfs/etc/modprobe.d/macpro-gpu.conf`](archiso/airootfs/etc/modprobe.d/macpro-gpu.conf), [`archiso/airootfs/etc/profile.d/no-reboot.sh`](archiso/airootfs/etc/profile.d/no-reboot.sh), [`archiso/airootfs/etc/systemd/system/reboot.target`](archiso/airootfs/etc/systemd/system/reboot.target) | Forces amdgpu SI support, disables warm reboot behavior, and masks reboot in the live root. |
 | Installer launch | [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh), [`archiso/airootfs/usr/local/bin/pkexec-wrapper`](archiso/airootfs/usr/local/bin/pkexec-wrapper), [`archiso/airootfs/usr/local/bin/prepare-live-desktop.sh`](archiso/airootfs/usr/local/bin/prepare-live-desktop.sh) | Keyring refresh, Calamares launch, desktop preparation, and live environment workarounds. |
 | Inherited cleanup helpers | [`archiso/airootfs/usr/local/bin/remove-nvidia`](archiso/airootfs/usr/local/bin/remove-nvidia), [`removeun`](archiso/airootfs/usr/local/bin/removeun), [`removeun-online`](archiso/airootfs/usr/local/bin/removeun-online), [`nvidia-module-loader`](archiso/airootfs/usr/local/bin/nvidia-module-loader) | Generic CachyOS/NVIDIA/VM cleanup behavior that may or may not still belong in a Mac Pro-only ISO. |
-| Build wrapper | [`buildiso.sh`](buildiso.sh), [`util-iso.sh`](util-iso.sh), [`util.sh`](util.sh), [`util-iso-mount.sh`](util-iso-mount.sh), [`util-msg.sh`](util-msg.sh) | Prepares the archiso profile, mutates generated files, calls `mkarchiso`, then signs/checksums outputs. |
+| Build wrapper | [`buildiso.sh`](buildiso.sh), [`util-iso.sh`](util-iso.sh), [`util.sh`](util.sh), [`util-iso-mount.sh`](util-iso-mount.sh), [`util-msg.sh`](util-msg.sh) | Prepares the archiso profile, mutates generated files, calls `mkarchiso`, then creates checksums and signs outputs only when a GPG secret key is available. |
 | CI/test flow | [`.github/workflows/build.yml`](.github/workflows/build.yml), [`ci.build.sh`](ci.build.sh), [`testiso.sh`](testiso.sh), [`testcases/`](testcases), [`machines/`](machines) | GitHub Actions now checks out the sibling kernel repo and builds `linux-macpro61` packages before the ISO step. The quicktest/local paths remain inherited from CachyOS and still need revalidation for Mac Pro-specific behavior. |
 
 ## File Map
@@ -67,8 +67,8 @@ testcases/* + machines/*
 | Path | Purpose | Notes |
 |------|------|------|
 | [`buildiso.sh`](buildiso.sh) | Top-level build wrapper. | Parses `-p`, `-c`, `-r`, `-w`, `-v`; imports helper scripts; calls `run_build`. Root escalation is currently commented out. |
-| [`util-iso.sh`](util-iso.sh) | Main archiso orchestration. | Generates MOTD/version tags, prepares profile, validates the Mac Pro package repo, refreshes `macpro.db`, rewrites the copied `[macpro]` pacman path, mutates `/usr/bin/mkarchiso`, runs `mkarchiso`, creates checksums, signs ISO outputs. |
-| [`util.sh`](util.sh) | Generic helpers. | Timers, root escalation, archiso dependency check, checksums, GPG signing. |
+| [`util-iso.sh`](util-iso.sh) | Main archiso orchestration. | Generates MOTD/version tags, prepares profile, validates the Mac Pro package repo, refreshes `macpro.db`, rewrites the copied `[macpro]` pacman path, mutates `/usr/bin/mkarchiso`, runs `mkarchiso`, creates checksums, and delegates optional ISO signing. |
+| [`util.sh`](util.sh) | Generic helpers. | Timers, root escalation, archiso dependency check, checksums, and optional GPG signing when a secret key is available. |
 | [`util-iso-mount.sh`](util-iso-mount.sh) | Mount cleanup helpers. | Unmounts active image and filesystem mounts under the work directory. |
 | [`util-msg.sh`](util-msg.sh) | Terminal output helpers. | Colorized `msg`, `info`, `warning`, `error`, and `import`. |
 | [`ci.build.sh`](ci.build.sh) | Stale CI helper. | References missing `fix_permissions.sh` and `mkarchiso`; not the current top-level build path. |

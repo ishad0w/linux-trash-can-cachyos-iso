@@ -169,6 +169,48 @@ configure_macpro_repo() {
     msg2 "Using Mac Pro package repo: ${_server_url}"
 }
 
+mkarchiso_iso_path() {
+    local _profile="$1"
+    local _profiledef="${work_dir}/archiso/profiledef.sh"
+    local _iso_name
+    local _iso_version
+    local _path
+    local _match=""
+    local _match_count=0
+    local _candidate
+
+    _iso_name=$(grep -E '^iso_name=' "${_profiledef}" | head -n 1)
+    _iso_name="${_iso_name#*=}"
+    _iso_name="${_iso_name%\"}"
+    _iso_name="${_iso_name#\"}"
+    _iso_name="${_iso_name%\'}"
+    _iso_name="${_iso_name#\'}"
+
+    if [[ -z "${_iso_name}" ]]; then
+        die "Could not read iso_name from %s" "${_profiledef}"
+    fi
+
+    if _iso_version="$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d 2>/dev/null)"; then
+        _path="${outFolder}/${_profile}/${_iso_name}-${_iso_version}-x86_64.iso"
+
+        if [[ -f "${_path}" ]]; then
+            printf '%s\n' "${_path}"
+            return 0
+        fi
+    fi
+
+    while IFS= read -r _candidate; do
+        _match="${_candidate}"
+        _match_count=$((_match_count + 1))
+    done < <(find "${outFolder}/${_profile}" -maxdepth 1 -type f -name "${_iso_name}-*-x86_64.iso" -print)
+
+    if [[ "${_match_count}" -ne 1 ]]; then
+        die "Expected exactly one mkarchiso output matching %s, found %s" "${_iso_name}-*-x86_64.iso" "${_match_count}"
+    fi
+
+    printf '%s\n' "${_match}"
+}
+
 prepare_profile(){
     profile=$1
 
@@ -234,7 +276,7 @@ run_build() {
     sudo chown $USER $outFolder
 
     cp ${work_dir}/iso/arch/pkglist.x86_64.txt "$outFolder/$_profile/$(gen_iso_fn).pkgs.txt"
-    mv "$outFolder/$_profile/cachyos-$(date --date="@${SOURCE_DATE_EPOCH:-$(date +%s)}" +%Y.%m.%d)-x86_64.iso" "$outFolder/$_profile/${iso_file}"
+    mv "$(mkarchiso_iso_path "${_profile}")" "$outFolder/$_profile/${iso_file}"
 
     msg "Done [Build ISO] ${iso_file}"
     msg "Finished building [%s]" "${_profile}"

@@ -93,12 +93,25 @@ sign_with_key() {
         exit 1
     fi
 
-    msg2 "signing [%s] with key %s" "${1##*/}" "${GPGKEY}"
+    local SIGNWITHKEY=()
+    if [[ "${SKIP_ISO_SIGNING:-false}" == "true" || "${SKIP_ISO_SIGNING:-0}" == "1" ]]; then
+        warning "Skipping signature for [%s]: SKIP_ISO_SIGNING is set" "${1##*/}"
+        return 0
+    fi
+
+    if [[ -n $GPGKEY ]]; then
+        if ! gpg --list-secret-keys "${GPGKEY}" >/dev/null 2>&1; then
+            warning "Skipping signature for [%s]: GPGKEY has no available secret key" "${1##*/}"
+            return 0
+        fi
+        SIGNWITHKEY=(-u "${GPGKEY}")
+    elif ! gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec'; then
+        warning "Skipping signature for [%s]: no GPG secret key is available" "${1##*/}"
+        return 0
+    fi
+
+    msg2 "signing [%s] with key %s" "${1##*/}" "${GPGKEY:-default}"
     [[ -e "$1".sig ]] && rm "$1".sig
 
-    local SIGNWITHKEY=()
-    if [[ -n $GPGKEY ]]; then
-        SIGNWITHKEY=(-u "${GPGKEY}")
-    fi
     gpg --detach-sign --use-agent "${SIGNWITHKEY[@]}" "$1"
 }
