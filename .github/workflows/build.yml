@@ -26,13 +26,13 @@ jobs:
 
       - name: Clone CachyOS-Live-ISO
         id: clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Clone linux-trash-can kernel repo
         id: clone-kernel
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ishad0w/linux-trash-can
           path: linux-trash-can
@@ -96,6 +96,8 @@ jobs:
         id: build
         run: |
           sudo -H -E -u builder ./buildiso.sh
+        env:
+          SKIP_ISO_SIGNING: "true"
 
       - name: Upload ISO to artifacts
         id: upload
