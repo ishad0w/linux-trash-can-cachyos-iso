@@ -53,23 +53,33 @@ jobs:
           sudo pacman -Syu --noconfirm --needed \
             archiso \
             bc \
+            binutils \
             cachyos-keyring \
             clang \
             cpio \
             gettext \
             git \
+            glibc \
+            gnupg \
             grub \
             libelf \
+            libgcc \
             linux-firmware \
             lld \
             llvm \
             mkinitcpio-archiso \
+            openssl \
             pahole \
             perl \
             python \
+            rust \
+            rust-bindgen \
+            rust-src \
             squashfs-tools \
             tar \
+            xxhash \
             xz \
+            zlib \
             zstd
 
       - name: Create build user
@@ -83,6 +93,9 @@ jobs:
         id: kernel-packages
         run: |
           sudo -H -E -u builder bash -lc '
+            gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys \
+              E18447AC260021D31F3FF6C4C8A2A4774B8B63C4 \
+              E8B9AA39F054E30E8290D492C3C4820857F654FE
             cd linux-trash-can/packaging/arch
             makepkg -s --noconfirm --needed
           '

@@ -37,7 +37,7 @@ local-repo/linux-macpro61*.pkg.tar.zst
     -> live ISO boots vmlinuz-linux-macpro61
 ```
 
-GRUB and BIOS syslinux have explicit Mac Pro 6,1 entries. Several inherited paths still boot generic CachyOS LTS or refer to `linux-cachyos`; those are documented as technical debt in [`TECH-DEBT.md`](TECH-DEBT.md).
+GRUB, BIOS syslinux, systemd-boot, loopback, and PXE now have explicit Mac Pro 6,1 primary entries. CachyOS LTS remains installed as an intentional fallback/safe path.
 
 ## Build
 
@@ -115,6 +115,7 @@ Always power off instead of warm rebooting when switching kernels. Apple EFI oft
 - [`MAP.md`](MAP.md) - repository map, change surfaces, and file purposes
 - [`AGENTS.md`](AGENTS.md) - working rules for humans and automation
 - [`TECH-DEBT.md`](TECH-DEBT.md) - confirmed stale, partial, or risky areas
+- [`docs/upstream-sync-2026-07-08.md`](docs/upstream-sync-2026-07-08.md) - latest upstream merge notes and retained fork behavior
 - [`CHANGELOG.md`](CHANGELOG.md) - inherited upstream CachyOS changelog snapshot, not a Mac Pro specific release log
 - [`../linux-trash-can/README.md`](../linux-trash-can/README.md) - sibling kernel project overview
 - [`../linux-trash-can/MAP.md`](../linux-trash-can/MAP.md) - kernel project map
@@ -122,7 +123,7 @@ Always power off instead of warm rebooting when switching kernels. Apple EFI oft
 ## Current Caveats
 
 - `local-repo/` must still be populated before the ISO can build; `buildiso.sh` only validates it, refreshes `macpro.db`, and rewrites the build-time pacman path.
-- UEFI systemd-boot, loopback, and PXE paths still look more generic than the GRUB/syslinux Mac Pro paths.
+- CachyOS LTS remains present as a fallback; primary live boot validation must confirm that the selected default path is `linux-macpro61`.
 - `ci.build.sh` is stale and references scripts that are not in this repository.
 - The GitHub workflow now checks out `ishad0w/linux-trash-can` and builds `linux-macpro61` packages before the ISO step; this still needs a successful CI run before treating it as a proven release path.
 - ISO checksums are always created after a successful build. Detached signatures are created only when a GPG secret key is available; CI artifacts can be unsigned unless signing secrets are configured.
