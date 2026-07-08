@@ -26,13 +26,13 @@ jobs:
 
       - name: Clone CachyOS-Live-ISO
         id: clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Clone linux-trash-can kernel repo
         id: clone-kernel
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ishad0w/linux-trash-can
           path: linux-trash-can
@@ -53,23 +53,33 @@ jobs:
           sudo pacman -Syu --noconfirm --needed \
             archiso \
             bc \
+            binutils \
             cachyos-keyring \
             clang \
             cpio \
             gettext \
             git \
+            glibc \
+            gnupg \
             grub \
             libelf \
+            libgcc \
             linux-firmware \
             lld \
             llvm \
             mkinitcpio-archiso \
+            openssl \
             pahole \
             perl \
             python \
+            rust \
+            rust-bindgen \
+            rust-src \
             squashfs-tools \
             tar \
+            xxhash \
             xz \
+            zlib \
             zstd
 
       - name: Create build user
@@ -83,8 +93,11 @@ jobs:
         id: kernel-packages
         run: |
           sudo -H -E -u builder bash -lc '
+            gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys \
+              E18447AC260021D31F3FF6C4C8A2A4774B8B63C4 \
+              E8B9AA39F054E30E8290D492C3C4820857F654FE
             cd linux-trash-can/packaging/arch
-            makepkg -s --noconfirm --needed
+            makepkg --cleanbuild -s --noconfirm --needed
           '
           mkdir -p local-repo
           cp linux-trash-can/packaging/arch/linux-macpro61-[0-9]*.pkg.tar.zst local-repo/
@@ -96,6 +109,8 @@ jobs:
         id: build
         run: |
           sudo -H -E -u builder ./buildiso.sh
+        env:
+          SKIP_ISO_SIGNING: "true"
 
       - name: Upload ISO to artifacts
         id: upload

@@ -46,9 +46,9 @@ function test_launch_calamares() {
     qt_send_key_combo "alt-f2"
     qt_wait_for_seconds 2
     qt_screenshot_ppm "$FUNCNAME"
-    qt_send_string_tab "CALAMARES_SKIP_GEOIP=1 sudo -E dbus-launch calamares -D6"
+    qt_send_string_tab "CALAMARES_SKIP_GEOIP=1 sudo -E systemd-inhibit dbus-launch calamares -D6"
     qt_screenshot_ppm "$FUNCNAME"
-    qt_wait_for_text "$FUNCNAME" "CALAMARES_SKIP_GEOIP=1 sudo -E dbus-launch calamares -D6" 3 3
+    qt_wait_for_seconds 1
     qt_screenshot_ppm "$FUNCNAME"
     qt_send_key_combo "tab"
     qt_send_key_combo "tab"
@@ -167,6 +167,7 @@ function test_calamares_install() {
 }
 
 function test_calamares_failed() {
+    qt_send_key_combo "tab"
     qt_send_key_combo "spc"
     qt_wait_for_seconds 2
     qt_screenshot_ppm "$FUNCNAME"

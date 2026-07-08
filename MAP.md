@@ -40,7 +40,7 @@ testcases/* + machines/*
 | Surface | Main files | What is really changing here |
 |------|------|------|
 | Kernel package source | [`archiso/pacman.conf`](archiso/pacman.conf), [`local-repo/`](local-repo), [`archiso/packages_desktop.x86_64`](archiso/packages_desktop.x86_64), [`util-iso.sh`](util-iso.sh) | The ISO consumes prebuilt `linux-macpro61` and headers packages. `buildiso.sh`/`util-iso.sh` validate the repo, refresh `macpro.db`, and rewrite the copied build profile to the current local repo path. |
-| Live boot entries | [`archiso/grub/grub.cfg`](archiso/grub/grub.cfg), [`archiso/syslinux/archiso_sys-linux.cfg`](archiso/syslinux/archiso_sys-linux.cfg), [`archiso/efiboot/loader/entries/`](archiso/efiboot/loader/entries), [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg), [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) | GRUB and BIOS syslinux have Mac Pro entries. systemd-boot, loopback, and PXE are still mostly generic CachyOS LTS/stable paths. |
+| Live boot entries | [`archiso/grub/grub.cfg`](archiso/grub/grub.cfg), [`archiso/syslinux/archiso_sys-linux.cfg`](archiso/syslinux/archiso_sys-linux.cfg), [`archiso/efiboot/loader/entries/`](archiso/efiboot/loader/entries), [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg), [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) | GRUB, BIOS syslinux, systemd-boot, loopback GRUB, and PXE all expose a Mac Pro primary entry. CachyOS LTS remains the intentional fallback path. |
 | Live root hardware defaults | [`archiso/airootfs/etc/modprobe.d/macpro-gpu.conf`](archiso/airootfs/etc/modprobe.d/macpro-gpu.conf), [`archiso/airootfs/etc/profile.d/no-reboot.sh`](archiso/airootfs/etc/profile.d/no-reboot.sh), [`archiso/airootfs/etc/systemd/system/reboot.target`](archiso/airootfs/etc/systemd/system/reboot.target) | Forces amdgpu SI support, disables warm reboot behavior, and masks reboot in the live root. |
 | Installer launch | [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh), [`archiso/airootfs/usr/local/bin/pkexec-wrapper`](archiso/airootfs/usr/local/bin/pkexec-wrapper), [`archiso/airootfs/usr/local/bin/prepare-live-desktop.sh`](archiso/airootfs/usr/local/bin/prepare-live-desktop.sh) | Keyring refresh, Calamares launch, desktop preparation, and live environment workarounds. |
 | Inherited cleanup helpers | [`archiso/airootfs/usr/local/bin/remove-nvidia`](archiso/airootfs/usr/local/bin/remove-nvidia), [`removeun`](archiso/airootfs/usr/local/bin/removeun), [`removeun-online`](archiso/airootfs/usr/local/bin/removeun-online), [`nvidia-module-loader`](archiso/airootfs/usr/local/bin/nvidia-module-loader) | Generic CachyOS/NVIDIA/VM cleanup behavior that may or may not still belong in a Mac Pro-only ISO. |
@@ -89,11 +89,11 @@ testcases/* + machines/*
 | Path | Purpose | Notes |
 |------|------|------|
 | [`archiso/grub/grub.cfg`](archiso/grub/grub.cfg) | Main GRUB boot menu. | Primary entry boots `vmlinuz-linux-macpro61` with `amdgpu.si_support=1`, `amdgpu.dc=0`, `acpi_mask_gpe=0x16`, and NVMe loading. |
-| [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg) | GRUB loopback ISO boot. | Still generic CachyOS LTS and `i915/amdgpu.modeset` oriented, not Mac Pro-specific. |
+| [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg) | GRUB loopback ISO boot. | Defaults to the `linux-macpro61` entry and keeps LTS/nomodeset fallback entries. |
 | [`archiso/syslinux/archiso_sys-linux.cfg`](archiso/syslinux/archiso_sys-linux.cfg) | BIOS/syslinux live boot entries. | Has a Mac Pro primary entry, LTS fallback, and nomodeset safe mode. |
-| [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) | PXE boot entries. | Still generic CachyOS LTS. |
-| [`archiso/efiboot/loader/entries/`](archiso/efiboot/loader/entries) | systemd-boot entries. | Still generic CachyOS LTS/stable and does not expose `linux-macpro61` as the default. |
-| [`archiso/efiboot/loader/loader.conf`](archiso/efiboot/loader/loader.conf) | systemd-boot default selector. | Defaults to `01-archiso-linux.conf`, currently LTS. |
+| [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) | PXE boot entries. | NBD, NFS, and HTTP entries boot `linux-macpro61`. |
+| [`archiso/efiboot/loader/entries/`](archiso/efiboot/loader/entries) | systemd-boot entries. | `01-archiso-linux.conf` boots `linux-macpro61`; LTS remains in fallback entries. |
+| [`archiso/efiboot/loader/loader.conf`](archiso/efiboot/loader/loader.conf) | systemd-boot default selector. | Defaults to `01-archiso-linux.conf`, the Mac Pro kernel entry. |
 
 ### `archiso/airootfs/`
 
@@ -142,9 +142,8 @@ These are mentioned in docs or scripts but should not be committed:
 
 - This repo does not build the kernel. It consumes packages from the sibling kernel project.
 - The committed `[macpro]` pacman repo path is a placeholder; direct `mkarchiso` calls still need a real `file://` repo path or should go through `buildiso.sh`.
-- GRUB and BIOS syslinux are the most Mac Pro-specific boot paths today.
-- systemd-boot, loopback GRUB, and PXE are inherited/generic and should not be treated as equivalent to the primary Mac Pro GRUB path.
-- The package list includes `linux-cachyos-lts` as fallback but the `02-archiso-linux-cachyos.conf` entry references `linux-cachyos`, which is not in the package list.
+- All committed boot paths now have a Mac Pro primary entry; keep GRUB, syslinux, systemd-boot, loopback, and PXE in sync when changing kernel command-line flags.
+- The package list includes `linux-cachyos-lts` as an intentional fallback, not as the primary live kernel.
 - The live root masks warm reboot, but the GRUB menu still exposes a restart entry with a warning.
 - The inherited upstream CachyOS changelog is not a release log for this fork.
 

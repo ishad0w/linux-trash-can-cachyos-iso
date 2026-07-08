@@ -6,7 +6,7 @@ Scope of this file:
 
 - Tracks debt visible from the committed tree, docs, scripts, and boot profile
 - Focuses on stale, partial, misleading, risky, or likely non-working paths
-- Uses the current repository state as of 2026-05-04
+- Uses the current repository state as of 2026-07-08
 
 This is not a full ISO build or Mac Pro hardware validation report. Some items are confirmed by tree inspection and path mismatch, not by live boot testing.
 
@@ -42,52 +42,51 @@ Exit criteria:
 - Document the chosen CI package source in release docs
 - Keep direct `mkarchiso` usage documented as requiring a real `[macpro]` `file://` path
 
-### ISO-TD-002 - Bootloader paths disagree on the default kernel
+### ISO-TD-002 - Bootloader paths need real ISO verification after alignment
 
-**State:** open
+**State:** partially mitigated
 **Area:** boot profile / hardware support
 
 Evidence:
 
 - [`archiso/grub/grub.cfg`](archiso/grub/grub.cfg) has a primary `linux-macpro61` entry with Mac Pro parameters
 - [`archiso/syslinux/archiso_sys-linux.cfg`](archiso/syslinux/archiso_sys-linux.cfg) has a BIOS `linux-macpro61` entry
-- [`archiso/efiboot/loader/entries/01-archiso-linux.conf`](archiso/efiboot/loader/entries/01-archiso-linux.conf) defaults to `linux-cachyos-lts`
-- [`archiso/efiboot/loader/entries/02-archiso-linux-cachyos.conf`](archiso/efiboot/loader/entries/02-archiso-linux-cachyos.conf) references `linux-cachyos`, which is not listed in [`archiso/packages_desktop.x86_64`](archiso/packages_desktop.x86_64)
-- [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg) and [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) still boot generic CachyOS LTS
+- [`archiso/efiboot/loader/entries/01-archiso-linux.conf`](archiso/efiboot/loader/entries/01-archiso-linux.conf) now defaults to `linux-macpro61`
+- [`archiso/efiboot/loader/entries/02-archiso-linux-cachyos.conf`](archiso/efiboot/loader/entries/02-archiso-linux-cachyos.conf) is now an explicit `linux-cachyos-lts` fallback instead of a broken `linux-cachyos` entry
+- [`archiso/grub/loopback.cfg`](archiso/grub/loopback.cfg) and [`archiso/syslinux/archiso_pxe-linux.cfg`](archiso/syslinux/archiso_pxe-linux.cfg) now have Mac Pro primary entries
 
 Why this matters:
 
-- UEFI users can accidentally boot a generic kernel path instead of the Mac Pro kernel depending on boot loader path
-- Some entries can reference kernel artifacts that are not installed into the ISO
-- Hardware support claims are only true for the Mac Pro-specific entries
+- The committed entries are aligned, but the built ISO still needs verification that every referenced kernel/initramfs artifact exists
+- Hardware support claims still require real Mac Pro cold-boot validation
 
 Exit criteria:
 
-- Decide which boot loaders are supported
-- Make every supported boot loader default to `linux-macpro61` with the same kernel parameters
-- Delete or clearly label unsupported loopback/PXE/systemd-boot entries
+- Build an ISO and inspect `/boot` artifacts for `vmlinuz-linux-macpro61` and `initramfs-linux-macpro61.img`
+- Boot-test the intended UEFI path on real Mac Pro 6,1 hardware
+- Keep `linux-cachyos-lts` entries labelled as fallback/safe paths
 
-### ISO-TD-003 - Initramfs generation path is not aligned with the primary Mac Pro kernel
+### ISO-TD-003 - Initramfs generation path needs ISO artifact verification
 
-**State:** open
+**State:** partially mitigated
 **Area:** initramfs / archiso profile
 
 Evidence:
 
 - GRUB/syslinux primary entries expect `initramfs-linux-macpro61.img`
-- [`archiso/airootfs/etc/mkinitcpio.d/linux.preset`](archiso/airootfs/etc/mkinitcpio.d/linux.preset) references `vmlinuz-linux-cachyos-lts` and `initramfs-linux-cachyos-lts.img`
+- [`archiso/airootfs/etc/mkinitcpio.d/linux.preset`](archiso/airootfs/etc/mkinitcpio.d/linux.preset) now references `vmlinuz-linux-macpro61` and `initramfs-linux-macpro61.img`
 - The sibling kernel project documents a no-initramfs primary design but still tolerates initramfs as fallback
 
 Why this matters:
 
-- The ISO can expose a Mac Pro primary entry without a clearly generated matching initramfs
-- Debugging boot failures becomes ambiguous: kernel package issue, preset issue, or bootloader issue
+- The committed preset is aligned, but the full ISO build still needs to prove mkinitcpio creates the expected Mac Pro initramfs
+- Debugging boot failures remains ambiguous until the generated artifact is inspected
 
 Exit criteria:
 
-- Add/verify a `linux-macpro61` mkinitcpio preset in the ISO profile, or
-- Change boot entries to the intended no-initramfs contract if supported by archiso, and
-- Document the chosen contract in README and MAP
+- Build the ISO and inspect the generated `/boot` tree
+- Keep boot entries and preset on the same `linux-macpro61` initramfs contract
+- Document any mkinitcpio module warnings that remain during package install
 
 ### ISO-TD-004 - CI custom-kernel ISO path is wired but not proven
 
@@ -231,7 +230,7 @@ Evidence:
 - [`util-iso.sh`](util-iso.sh) fetches the CachyOS mirrorlist from the `CachyOS-PKGBUILDS` `master` branch during build
 - [`.github/workflows/build.yml`](.github/workflows/build.yml) uses the floating `archlinux:base-devel` container tag and installs latest packages at workflow runtime
 - The quicktest job builds `quickemu` from the AUR at current HEAD
-- [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh) installs `cachyos-calamares-next` at runtime before launching the installer
+- [`archiso/airootfs/usr/local/bin/calamares-online.sh`](archiso/airootfs/usr/local/bin/calamares-online.sh) installs `cachyos-calamares` at runtime before launching the installer
 
 Why this matters:
 
