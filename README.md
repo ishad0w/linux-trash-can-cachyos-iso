@@ -2,7 +2,7 @@
 
 Custom CachyOS live ISO profile for the Mac Pro 6,1 (Late 2013). It is the CachyOS/Arch live-media side of the workspace: it expects `linux-macpro61` packages from the sibling kernel project and layers Mac Pro 6,1 boot defaults, amdgpu Southern Islands parameters, reboot protection, and installer conveniences on top of a CachyOS desktop ISO.
 
-> Historical upstream note: the original `wolffcatskyy/cachyos-macpro-iso` and `wolffcatskyy/linux-mac` projects were archived on March 10, 2026. Treat this repository (`ishad0w/linux-trash-can-cachyos-iso`), the sibling [`linux-trash-can`](https://github.com/ishad0w/linux-trash-can), and the docs in this tree as the maintained source of truth.
+> Historical upstream note: the original `wolffcatskyy/cachyos-macpro-iso` and `wolffcatskyy/linux-mac` projects were archived on March 10, 2026. Treat this repository (`ishad0w/linux-trash-can-cachyos-iso`) as the maintained ISO/product source.
 
 ## What This Is
 
@@ -112,21 +112,12 @@ Always power off instead of warm rebooting when switching kernels. Apple EFI oft
 
 ## Documentation
 
-- [`MAP.md`](MAP.md) - repository map, change surfaces, and file purposes
-- [`AGENTS.md`](AGENTS.md) - working rules for humans and automation
-- [`TECH-DEBT.md`](TECH-DEBT.md) - confirmed stale, partial, or risky areas
-- [`docs/upstream-sync-2026-07-08.md`](docs/upstream-sync-2026-07-08.md) - latest upstream merge notes and retained fork behavior
-- [`CHANGELOG.md`](CHANGELOG.md) - inherited upstream CachyOS changelog snapshot, not a Mac Pro specific release log
-- [`../linux-trash-can/README.md`](../linux-trash-can/README.md) - sibling kernel project overview
-- [`../linux-trash-can/MAP.md`](../linux-trash-can/MAP.md) - kernel project map
+- [Sibling kernel project](https://github.com/ishad0w/linux-trash-can) - `linux-macpro61` package source
 
 ## Current Caveats
 
 - `local-repo/` must still be populated before the ISO can build; `buildiso.sh` only validates it, refreshes `macpro.db`, and rewrites the build-time pacman path.
 - CachyOS LTS remains present as a fallback; primary live boot validation must confirm that the selected default path is `linux-macpro61`.
-- `ci.build.sh` is stale and references scripts that are not in this repository.
 - The GitHub workflow now checks out `ishad0w/linux-trash-can` and builds `linux-macpro61` packages before the ISO step; this still needs a successful CI run before treating it as a proven release path.
 - ISO checksums are always created after a successful build. Detached signatures are created only when a GPG secret key is available; CI artifacts can be unsigned unless signing secrets are configured.
 - This repo carries inherited CachyOS live ISO helpers, NVIDIA cleanup code, VM guest services, and generic test flows that have not all been re-audited for the Mac Pro-only target.
-
-Use [`MAP.md`](MAP.md) to find the right file before changing a boot path or package list. Use [`TECH-DEBT.md`](TECH-DEBT.md) before deleting inherited CachyOS pieces.
