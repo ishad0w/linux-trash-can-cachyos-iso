@@ -2,8 +2,6 @@
 
 Custom CachyOS live ISO profile for the Mac Pro 6,1 (Late 2013). It expects `linux-macpro61` packages from the sibling kernel project and layers Mac Pro 6,1 boot defaults, amdgpu Southern Islands parameters, reboot protection, and installer conveniences on top of a CachyOS desktop ISO.
 
-> Historical upstream note: the original `wolffcatskyy/cachyos-macpro-iso` and `wolffcatskyy/linux-mac` projects were archived on March 10, 2026. Treat this repository (`ishad0w/linux-trash-can-cachyos-iso`) as the maintained ISO/product source.
-
 ## What This Is
 
 This repository is an `archiso` profile plus build/test helpers. It does not build the kernel itself. The expected input is a local pacman repository containing:
@@ -11,7 +9,7 @@ This repository is an `archiso` profile plus build/test helpers. It does not bui
 - `linux-macpro61-*.pkg.tar.zst`
 - `linux-macpro61-headers-*.pkg.tar.zst`
 
-Those packages come from the sibling kernel repository's [`packaging/arch`](../linux-trash-can/packaging/arch) path. The ISO then boots with `linux-macpro61` where the active boot loader path uses the Mac Pro entry.
+Those packages come from the sibling kernel repository's [`packaging/arch`](https://github.com/ishad0w/linux-trash-can/tree/main/packaging/arch) path. The ISO then boots with `linux-macpro61` where the active boot loader path uses the Mac Pro entry.
 
 ## Hardware Target
 
@@ -110,13 +108,13 @@ Artifacts are written under `out/desktop/`.
 
 Always power off instead of warm rebooting when switching kernels. Apple EFI often leaves the FirePro GPUs uninitialized after warm reboot, which can produce a black screen.
 
-## Documentation
+## Related
 
 - [Sibling kernel project](https://github.com/ishad0w/linux-trash-can) - `linux-macpro61` package source
 
-## Current Caveats
+## Notes
 
 - `local-repo/` must still be populated before the ISO can build; `buildiso.sh` only validates it, refreshes `macpro.db`, and rewrites the build-time pacman path.
-- CachyOS LTS remains present as a fallback; primary live boot validation must confirm that the selected default path is `linux-macpro61`.
+- CachyOS LTS remains present as a fallback; choose the Mac Pro entry to boot `linux-macpro61`.
 - ISO checksums are always created after a successful build. Detached signatures are created only when a GPG secret key is available.
 - Always use a cold boot when moving between kernels on the Mac Pro 6,1.
