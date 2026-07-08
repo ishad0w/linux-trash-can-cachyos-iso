@@ -97,7 +97,7 @@ jobs:
               E18447AC260021D31F3FF6C4C8A2A4774B8B63C4 \
               E8B9AA39F054E30E8290D492C3C4820857F654FE
             cd linux-trash-can/packaging/arch
-            makepkg -s --noconfirm --needed
+            makepkg --cleanbuild -s --noconfirm --needed
           '
           mkdir -p local-repo
           cp linux-trash-can/packaging/arch/linux-macpro61-[0-9]*.pkg.tar.zst local-repo/
