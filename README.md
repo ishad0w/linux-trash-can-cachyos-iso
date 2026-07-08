@@ -1,6 +1,6 @@
 # CachyOS Mac Pro 6,1 ISO Profile
 
-Custom CachyOS live ISO profile for the Mac Pro 6,1 (Late 2013). It is the CachyOS/Arch live-media side of the workspace: it expects `linux-macpro61` packages from the sibling kernel project and layers Mac Pro 6,1 boot defaults, amdgpu Southern Islands parameters, reboot protection, and installer conveniences on top of a CachyOS desktop ISO.
+Custom CachyOS live ISO profile for the Mac Pro 6,1 (Late 2013). It expects `linux-macpro61` packages from the sibling kernel project and layers Mac Pro 6,1 boot defaults, amdgpu Southern Islands parameters, reboot protection, and installer conveniences on top of a CachyOS desktop ISO.
 
 > Historical upstream note: the original `wolffcatskyy/cachyos-macpro-iso` and `wolffcatskyy/linux-mac` projects were archived on March 10, 2026. Treat this repository (`ishad0w/linux-trash-can-cachyos-iso`) as the maintained ISO/product source.
 
@@ -118,6 +118,5 @@ Always power off instead of warm rebooting when switching kernels. Apple EFI oft
 
 - `local-repo/` must still be populated before the ISO can build; `buildiso.sh` only validates it, refreshes `macpro.db`, and rewrites the build-time pacman path.
 - CachyOS LTS remains present as a fallback; primary live boot validation must confirm that the selected default path is `linux-macpro61`.
-- The GitHub workflow now checks out `ishad0w/linux-trash-can` and builds `linux-macpro61` packages before the ISO step; this still needs a successful CI run before treating it as a proven release path.
-- ISO checksums are always created after a successful build. Detached signatures are created only when a GPG secret key is available; CI artifacts can be unsigned unless signing secrets are configured.
-- This repo carries inherited CachyOS live ISO helpers, NVIDIA cleanup code, VM guest services, and generic test flows that have not all been re-audited for the Mac Pro-only target.
+- ISO checksums are always created after a successful build. Detached signatures are created only when a GPG secret key is available.
+- Always use a cold boot when moving between kernels on the Mac Pro 6,1.
